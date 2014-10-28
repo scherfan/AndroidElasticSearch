@@ -10,8 +10,9 @@
     <string name="label_director">Director</string>
     <string name="label_year">Year</string>
     <string name="label_genre">Genre</string>
-    <string name="button_add">Add new...</string>
+    <string name="button_add">Add new&#8230;</string>
     <string name="button_search">Search</string>
     <string name="button_save">Save</string>
+    <string name="hint">Enter search keyword</string>
 
 </resources>

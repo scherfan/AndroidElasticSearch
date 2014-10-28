@@ -58,6 +58,7 @@ public final class R {
         public static final int button_add=0x7f050009;
         public static final int button_save=0x7f05000b;
         public static final int button_search=0x7f05000a;
+        public static final int hint=0x7f05000c;
         public static final int label_director=0x7f050006;
         public static final int label_genre=0x7f050008;
         public static final int label_id=0x7f050004;

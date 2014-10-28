@@ -1,3 +1,4 @@
+
 package ca.ualberta.ssrg.movies.es;
 
 import java.io.BufferedReader;
@@ -9,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
@@ -25,7 +27,8 @@ import ca.ualberta.ssrg.movies.es.data.SimpleSearchCommand;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-public class ESMovieManager implements IMovieManager {
+public class ESMovieManager implements IMovieManager
+{
 
 	private static final String SEARCH_URL = "http://cmput301.softwareprocess.es:8080/testing/movie/_search";
 	private static final String RESOURCE_URL = "http://cmput301.softwareprocess.es:8080/testing/movie/";
@@ -33,42 +36,85 @@ public class ESMovieManager implements IMovieManager {
 
 	private Gson gson;
 
-	public ESMovieManager() {
+	public ESMovieManager()
+	{
 		gson = new Gson();
 	}
 
 	/**
 	 * Get a movie with the specified id
 	 */
-	public Movie getMovie(int id) {
+	public Movie getMovie(int id)
+	{
 
 		HttpClient httpClient = new DefaultHttpClient();
 		HttpGet httpGet = new HttpGet(RESOURCE_URL + id);
 
 		HttpResponse response;
 
-		try {
+		try
+		{
 			response = httpClient.execute(httpGet);
 			SearchHit<Movie> sr = parseMovieHit(response);
 			return sr.getSource();
 
-		} catch (Exception e) {
+		}
+		catch (Exception e)
+		{
 			e.printStackTrace();
-		} 
+		}
 
 		return null;
 	}
-
-	
 
 	/**
 	 * Get movies with the specified search string. If the search does not
 	 * specify fields, it searches on all the fields.
 	 */
-	public List<Movie> searchMovies(String searchString, String field) {
+	public List<Movie> searchMovies(String searchString, String field)
+	{
 		List<Movie> result = new ArrayList<Movie>();
 
 		// TODO: Implement search movies using ElasticSearch
+		if ("".equals(searchString) == true || searchString == null)
+			searchString = "*";
+		
+		HttpClient httpClient = new DefaultHttpClient();
+		
+		try
+        {
+	        HttpPost searchRequest = createSearchRequest(searchString, field);
+	        HttpResponse response = httpClient.execute(searchRequest);
+	        
+	        String status = response.getStatusLine().toString();
+	        Log.i(TAG, status);
+	        
+	        SearchResponse<Movie> esResponse = parseSearchResponse(response);
+	        Hits<Movie> hits = esResponse.getHits();
+	        
+	        if(hits != null)
+	        {
+	        	if(hits.getHits() != null)
+	        	{
+	        		for(SearchHit<Movie> sesr : hits.getHits())
+	        		{
+	        			result.add(sesr.getSource());
+	        		}
+	        	}
+	        }
+        }
+        catch (UnsupportedEncodingException e)
+        {
+	        e.printStackTrace();
+        }
+        catch (ClientProtocolException e)
+        {
+	        e.printStackTrace();
+        }
+        catch (IOException e)
+        {
+	        e.printStackTrace();
+        }
 		
 		return result;
 	}
@@ -76,10 +122,12 @@ public class ESMovieManager implements IMovieManager {
 	/**
 	 * Adds a new movie
 	 */
-	public void addMovie(Movie movie) {
+	public void addMovie(Movie movie)
+	{
 		HttpClient httpClient = new DefaultHttpClient();
 
-		try {
+		try
+		{
 			HttpPost addRequest = new HttpPost(RESOURCE_URL + movie.getId());
 
 			StringEntity stringEntity = new StringEntity(gson.toJson(movie));
@@ -90,7 +138,9 @@ public class ESMovieManager implements IMovieManager {
 			String status = response.getStatusLine().toString();
 			Log.i(TAG, status);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e)
+		{
 			e.printStackTrace();
 		}
 	}
@@ -98,10 +148,12 @@ public class ESMovieManager implements IMovieManager {
 	/**
 	 * Deletes the movie with the specified id
 	 */
-	public void deleteMovie(int movieId) {
+	public void deleteMovie(int movieId)
+	{
 		HttpClient httpClient = new DefaultHttpClient();
 
-		try {
+		try
+		{
 			HttpDelete deleteRequest = new HttpDelete(RESOURCE_URL + movieId);
 			deleteRequest.setHeader("Accept", "application/json");
 
@@ -109,7 +161,9 @@ public class ESMovieManager implements IMovieManager {
 			String status = response.getStatusLine().toString();
 			Log.i(TAG, status);
 
-		} catch (Exception e) {
+		}
+		catch (Exception e)
+		{
 			e.printStackTrace();
 		}
 	}
@@ -117,18 +171,22 @@ public class ESMovieManager implements IMovieManager {
 	/**
 	 * Creates a search request from a search string and a field
 	 */
-	private HttpPost createSearchRequest(String searchString, String field)	throws UnsupportedEncodingException {
-		
+	private HttpPost createSearchRequest(String searchString, String field)
+	        throws UnsupportedEncodingException
+	{
+
 		HttpPost searchRequest = new HttpPost(SEARCH_URL);
 
 		String[] fields = null;
-		if (field != null) {
+		if (field != null)
+		{
 			fields = new String[1];
 			fields[0] = field;
 		}
-		
-		SimpleSearchCommand command = new SimpleSearchCommand(searchString,	fields);
-		
+
+		SimpleSearchCommand command = new SimpleSearchCommand(searchString,
+		        fields);
+
 		String query = command.getJsonCommand();
 		Log.i(TAG, "Json command: " + query);
 
@@ -140,34 +198,43 @@ public class ESMovieManager implements IMovieManager {
 
 		return searchRequest;
 	}
-	
-	private SearchHit<Movie> parseMovieHit(HttpResponse response) {
-		
-		try {
+
+	private SearchHit<Movie> parseMovieHit(HttpResponse response)
+	{
+
+		try
+		{
 			String json = getEntityContent(response);
-			Type searchHitType = new TypeToken<SearchHit<Movie>>() {}.getType();
-			
+			Type searchHitType = new TypeToken<SearchHit<Movie>>()
+			{
+			}.getType();
+
 			SearchHit<Movie> sr = gson.fromJson(json, searchHitType);
 			return sr;
-		} 
-		catch (IOException e) {
+		}
+		catch (IOException e)
+		{
 			e.printStackTrace();
 		}
-		
+
 		return null;
 	}
 
 	/**
 	 * Parses the response of a search
 	 */
-	private SearchResponse<Movie> parseSearchResponse(HttpResponse response) throws IOException {
+	private SearchResponse<Movie> parseSearchResponse(HttpResponse response)
+	        throws IOException
+	{
 		String json;
 		json = getEntityContent(response);
 
-		Type searchResponseType = new TypeToken<SearchResponse<Movie>>() {
+		Type searchResponseType = new TypeToken<SearchResponse<Movie>>()
+		{
 		}.getType();
-		
-		SearchResponse<Movie> esResponse = gson.fromJson(json, searchResponseType);
+
+		SearchResponse<Movie> esResponse = gson.fromJson(json,
+		        searchResponseType);
 
 		return esResponse;
 	}
@@ -175,12 +242,15 @@ public class ESMovieManager implements IMovieManager {
 	/**
 	 * Gets content from an HTTP response
 	 */
-	public String getEntityContent(HttpResponse response) throws IOException {
-		BufferedReader rd = new BufferedReader(new InputStreamReader(response.getEntity().getContent()));
+	public String getEntityContent(HttpResponse response) throws IOException
+	{
+		BufferedReader rd = new BufferedReader(new InputStreamReader(response
+		        .getEntity().getContent()));
 
 		StringBuffer result = new StringBuffer();
 		String line = "";
-		while ((line = rd.readLine()) != null) {
+		while ((line = rd.readLine()) != null)
+		{
 			result.append(line);
 		}
 

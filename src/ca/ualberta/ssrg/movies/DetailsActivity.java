@@ -25,7 +25,7 @@ public class DetailsActivity extends Activity {
 			title.setText(movie.getTitle());
 			director.setText(movie.getDirector());
 			year.setText(String.valueOf(movie.getYear()));
-			genre.setText(movie.getGenres().toString());
+			//genre.setText(movie.getGenres().toString());
 		}
 	};
 
